@@ -2,12 +2,12 @@
 
 This is the Olympia token contract implementation:
   - Rinkeby:
-    - Address: `0xa0c107Db0e9194c18359d3265289239453b56CF2`
-    - Creator: `0x0778858af811B0D6E95928cD7774BD63143EF31c`
+    - Address: [`0xcD38db007C75052269A847892C245a4431B8570A`](https://rinkeby.etherscan.io/address/0xcd38db007c75052269a847892c245a4431b8570a)
+    - Creator: `0x76C5AF09C7724EdFD68dfCe98A9C6E15e48EaED7`
 
 The mainnet address registry can be found:
   - Rinkeby:
-    - Address: `0x79DA1C9eF6bf6bC64E66F8AbFFDDC1A093E50f13`
+    - Address: [`0x87ab379dbec3376B8E5DDC5080C0e4778b105069`](https://rinkeby.etherscan.io/address/0x87ab379dbec3376b8e5ddc5080c0e4778b105069)
     - Creator: `0x76C5AF09C7724EdFD68dfCe98A9C6E15e48EaED7`
 
 # Deployment of custom contracts on Rinkeby

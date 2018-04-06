@@ -9,6 +9,11 @@ contract PlayToken is StandardToken {
     event Issuance(address indexed owner, uint amount);
 
     /*
+     *  Constants
+     */
+    bool public constant isPlayToken = true;
+
+    /*
      *  Storage
      */
     address public creator;

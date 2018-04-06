@@ -38,6 +38,11 @@ contract('OlympiaToken', function(accounts) {
         assert.equal(await olympiaToken.symbol(), 'OLY')
         assert.equal(await olympiaToken.decimals(), 18)
     })
+
+
+    it('should declare itself to be a PlayToken', async () => {
+        assert.equal(await olympiaToken.isPlayToken(), true)
+    })
 })
 
 contract('PlayToken', function(accounts) {
@@ -111,6 +116,10 @@ contract('PlayToken', function(accounts) {
             await playToken.approve(spender, 1e16, { from: unwhitelisted })
             await throwUnlessRejects(playToken.transferFrom(unwhitelisted, getter, 1e16, { from: spender }))
         }
+    })
+
+    it('should declare itself to be a PlayToken', async () => {
+        assert.equal(await playToken.isPlayToken(), true)
     })
 })
 
