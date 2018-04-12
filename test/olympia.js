@@ -202,37 +202,37 @@ contract('RewardClaimHandler', function(accounts) {
                 .every(balance => balance.eq(0)))
     })
 
+    it('should allow anyone to register rewards', async () => {
+        await rewardToken.approve(rewardClaimHandler.address, totalAmountRewarded, { from: randomWhale })
+        await rewardClaimHandler.registerRewards(rewardToken.address, winners, rewardAmounts, rewardClaimDuration, { from: randomWhale })
+    })
+
     for(let whichRun = 0; whichRun < 2; whichRun++) {
         const caseDescriptionPrefix = whichRun === 0 ? '' : 'after a complete run '
         it(caseDescriptionPrefix + 'should not allow anyone to register rewards with not enough allowance or bad input', async () => {
             await rewardToken.approve(rewardClaimHandler.address, totalAmountRewarded / 10, { from: operator })
-            await throwUnlessRejects(rewardClaimHandler.registerRewards(winners, rewardAmounts, rewardClaimDuration, { from: operator }))
+            await throwUnlessRejects(rewardClaimHandler.registerRewards(rewardToken.address, winners, rewardAmounts, rewardClaimDuration, { from: operator }))
             await rewardToken.approve(rewardClaimHandler.address, totalAmountRewarded, { from: operator })
-            await throwUnlessRejects(rewardClaimHandler.registerRewards(winners.slice(1), rewardAmounts, rewardClaimDuration, { from: operator }))
-        })
-
-        it(caseDescriptionPrefix + 'should only allow operator to register rewards', async () => {
-            await rewardToken.approve(rewardClaimHandler.address, totalAmountRewarded, { from: randomWhale })
-            await throwUnlessRejects(rewardClaimHandler.registerRewards(winners, rewardAmounts, rewardClaimDuration, { from: randomWhale }))
+            await throwUnlessRejects(rewardClaimHandler.registerRewards(rewardToken.address, winners.slice(1), rewardAmounts, rewardClaimDuration, { from: operator }))
         })
 
         it(caseDescriptionPrefix + 'should allow operator to register rewards with contract', async () => {
             const balanceBefore = await rewardToken.balanceOf(operator)
             startTime = (await getBlock(
-                (await rewardClaimHandler.registerRewards(winners, rewardAmounts, rewardClaimDuration, { from: operator }))
+                (await rewardClaimHandler.registerRewards(rewardToken.address, winners, rewardAmounts, rewardClaimDuration, { from: operator }))
                     .receipt.blockNumber)).timestamp
             const balanceAfter = await rewardToken.balanceOf(operator)
             assert.equal(balanceBefore.sub(balanceAfter).valueOf(), totalAmountRewarded);
 
-            (await Promise.all(winners.map((w, i) => rewardClaimHandler.winners(i)))).forEach((winnerOnChain, i) =>
+            (await Promise.all(winners.map((w, i) => rewardClaimHandler.winners(operator, rewardToken.address, i)))).forEach((winnerOnChain, i) =>
                 assert.equal(winnerOnChain, winners[i]));
-            (await Promise.all(winners.map(winner => rewardClaimHandler.rewardAmounts(winner)))).forEach((reward, i) =>
+            (await Promise.all(winners.map(winner => rewardClaimHandler.rewardAmounts(operator, rewardToken.address, winner)))).forEach((reward, i) =>
                 assert.equal(reward.valueOf(), rewardAmounts[i]))
         })
 
         it(caseDescriptionPrefix + 'should prevent operator from registering rewards while registered rewards still exist', async () => {
             await rewardToken.approve(rewardClaimHandler.address, totalAmountRewarded, { from: operator })
-            await throwUnlessRejects(rewardClaimHandler.registerRewards(winners, rewardAmounts, rewardClaimDuration, { from: operator }))
+            await throwUnlessRejects(rewardClaimHandler.registerRewards(rewardToken.address, winners, rewardAmounts, rewardClaimDuration, { from: operator }))
         })
 
         it(caseDescriptionPrefix + 'should allow winners to receive rewards', async () => {
@@ -244,9 +244,9 @@ contract('RewardClaimHandler', function(accounts) {
             const rchBalanceBefore = await rewardToken.balanceOf(rewardClaimHandler.address)
             const balancesBefore = await Promise.all(claimants.map(claimant => rewardToken.balanceOf(claimant)))
 
-            await Promise.all(claimants.map(claimant => rewardClaimHandler.claimReward({ from: claimant })));
+            await Promise.all(claimants.map(claimant => rewardClaimHandler.claimReward(operator, rewardToken.address, { from: claimant })));
 
-            (await Promise.all(claimants.map(claimant => rewardClaimHandler.rewardAmounts(claimant)))).forEach(reward =>
+            (await Promise.all(claimants.map(claimant => rewardClaimHandler.rewardAmounts(operator, rewardToken.address, claimant)))).forEach(reward =>
                 assert.equal(reward.valueOf(), 0))
 
             const rchBalanceAfter = await rewardToken.balanceOf(rewardClaimHandler.address)
@@ -259,29 +259,28 @@ contract('RewardClaimHandler', function(accounts) {
         })
 
         it(caseDescriptionPrefix + 'should forbid operator from retracting rewards before time limit for claims passes', async () => {
-            assert((await getBlock('pending')).timestamp < (await rewardClaimHandler.guaranteedClaimEndTime()).valueOf())
-            await throwUnlessRejects(rewardClaimHandler.retractRewards({ from: operator }))
+            assert((await getBlock('pending')).timestamp < (await rewardClaimHandler.guaranteedClaimEndTime(operator, rewardToken.address)).valueOf())
+            await throwUnlessRejects(rewardClaimHandler.retractRewards(rewardToken.address, { from: operator }))
         })
 
-        it(caseDescriptionPrefix + 'should allow only operator to retract rewards after time limit for claims has passed, after which rewards can no longer be claimed', async () => {
+        it(caseDescriptionPrefix + 'should allow operator to retract rewards after time limit for claims has passed, after which rewards can no longer be claimed', async () => {
             const unclaimedRewards = totalAmountRewarded - totalRewardsClaimed
             const waitTime = ((await getBlock('pending')).timestamp) + rewardClaimDuration - startTime
             assert(waitTime > 0)
             await wait(waitTime)
-            await throwUnlessRejects(rewardClaimHandler.retractRewards({ from: randomWhale }))
 
             const opBalanceBefore = await rewardToken.balanceOf(operator)
             const rchBalanceBefore = await rewardToken.balanceOf(rewardClaimHandler.address)
-            await rewardClaimHandler.retractRewards({ from: operator })
+            await rewardClaimHandler.retractRewards(rewardToken.address, { from: operator })
             const opBalanceAfter = await rewardToken.balanceOf(operator)
             const rchBalanceAfter = await rewardToken.balanceOf(rewardClaimHandler.address)
 
             assert.equal(opBalanceAfter.sub(opBalanceBefore).valueOf(), unclaimedRewards)
             assert.equal(rchBalanceBefore.sub(rchBalanceAfter).valueOf(), unclaimedRewards);
-            (await Promise.all(winners.map(winner => rewardClaimHandler.rewardAmounts(winner)))).forEach((reward) =>
+            (await Promise.all(winners.map(winner => rewardClaimHandler.rewardAmounts(operator, rewardToken.address, winner)))).forEach((reward) =>
                 assert.equal(reward.valueOf(), 0))
 
-            await Promise.all(winners.map(winner => throwUnlessRejects(rewardClaimHandler.claimReward({ from: winner }))));
+            await Promise.all(winners.map(winner => throwUnlessRejects(rewardClaimHandler.claimReward(operator, rewardToken.address, { from: winner }))));
         })
     }
 })

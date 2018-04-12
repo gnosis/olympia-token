@@ -3,58 +3,71 @@ pragma solidity ^0.4.21;
 import "@gnosis.pm/util-contracts/contracts/Token.sol";
 
 contract RewardClaimHandler {
-    Token public rewardToken;
-    address public operator;
-    address[] public winners;
-    mapping (address => uint) public rewardAmounts;
-    uint public guaranteedClaimEndTime;
+    // The dream:
+    //
+    // struct RewardInfo {
+    //     address[] winners;
+    //     mapping (address => uint) rewardAmounts;
+    //     uint guaranteedClaimEndTime;
+    // }
+    //
+    // mapping (address =>
+    //     mapping (Token =>
+    //         RewardInfo)) public state;
 
-    function RewardClaimHandler(Token _rewardToken) public {
-        rewardToken = _rewardToken;
-        operator = msg.sender;
-    }
+    mapping (address => // operator
+        mapping (address => // token offered
+            address[])) public winners;
 
-    function registerRewards(address[] _winners, uint[] _rewardAmounts, uint duration) public {
+    mapping (address => // operator
+        mapping (address => // token offered
+            mapping (address => // winner
+                uint))) public rewardAmounts;
+
+    mapping (address => // operator
+        mapping (address => // token offered
+            uint)) public guaranteedClaimEndTime;
+
+    function registerRewards(Token token, address[] _winners, uint[] _rewardAmounts, uint duration) public {
         require(
-            winners.length == 0 &&
+            winners[msg.sender][token].length == 0 &&
             _winners.length > 0 &&
-            _winners.length == _rewardAmounts.length &&
-            msg.sender == operator
+            _winners.length == _rewardAmounts.length
         );
 
         uint totalAmount = 0;
         for(uint i = 0; i < _winners.length; i++) {
             totalAmount += _rewardAmounts[i];
-            rewardAmounts[_winners[i]] = _rewardAmounts[i];
+            rewardAmounts[msg.sender][token][_winners[i]] = _rewardAmounts[i];
         }
 
-        require(rewardToken.transferFrom(msg.sender, this, totalAmount));
+        require(token.transferFrom(msg.sender, this, totalAmount));
 
-        winners = _winners;
-        guaranteedClaimEndTime = now + duration;
+        winners[msg.sender][token] = _winners;
+        guaranteedClaimEndTime[msg.sender][token] = now + duration;
     }
 
-    function claimReward() public {
-        require(winners.length > 0 && rewardToken.transfer(msg.sender, rewardAmounts[msg.sender]));
-        rewardAmounts[msg.sender] = 0;
+    function claimReward(address operator, Token token) public {
+        require(winners[operator][token].length > 0 && token.transfer(msg.sender, rewardAmounts[operator][token][msg.sender]));
+        rewardAmounts[operator][token][msg.sender] = 0;
     }
 
-    function retractRewards() public {
-        require(winners.length > 0 && msg.sender == operator && now >= guaranteedClaimEndTime);
+    function retractRewards(Token token) public {
+        require(winners[msg.sender][token].length > 0 && now >= guaranteedClaimEndTime[msg.sender][token]);
 
         uint totalAmount = 0;
-        for(uint i = 0; i < winners.length; i++) {
-            totalAmount += rewardAmounts[winners[i]];
-            rewardAmounts[winners[i]] = 0;
+        for(uint i = 0; i < winners[msg.sender][token].length; i++) {
+            totalAmount += rewardAmounts[msg.sender][token][winners[msg.sender][token][i]];
+            rewardAmounts[msg.sender][token][winners[msg.sender][token][i]] = 0;
             // We don't use:
-            //     winners[i] = 0;
+            //     winners[msg.sender][token][i] = 0;
             // because of this:
             // https://ethereum.stackexchange.com/questions/3373/how-to-clear-large-arrays-without-blowing-the-gas-limit
             // This is a more gas efficient overall if more than one run happens
         }
 
-        require(rewardToken.transfer(msg.sender, totalAmount));
+        require(token.transfer(msg.sender, totalAmount));
 
-        winners.length = 0;
+        winners[msg.sender][token].length = 0;
     }
 }
