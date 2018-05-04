@@ -2,7 +2,7 @@
 
 This is a collection of contracts related to specifically to Gnosis Olympia. These contracts can be used in setting up prediction market tournaments.
 
-This is the Olympia token contract implementation:
+This is the pm-apollo-token contract implementation:
   - Rinkeby:
     - Address: `0x979861df79c7408553aaf20c01cfb3f81ccf9341`
     - Creator: `0xcAb5bb0408C48780D38C452bE20E30da1A10e656`
@@ -22,7 +22,7 @@ The ability to issue new tokens to addresses, or minting tokens, is restricted t
 
 The creator of the contract instance is also required to specify accounts which will be administrators of this contract. The creator and these administrators are, in turn, required to specify a whitelist for token transfers. This prevents arbitrary transfers of token value from one account to another. PlayTokens can be transferred only to or from the whitelisted addresses. You may use this mechanic to ensure that users can only perform transactions with the token on authorized contracts in an event.
 
-## OlympiaToken
+## pm-apollo-token
 
 Same as the PlayToken, except the optional [ERC20](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-20.md) fields `name`, `symbol`, and `decimals` have also been specified.
 
@@ -92,4 +92,4 @@ The `--from <account>` specifies an account with which to do the transaction.
 
 If you have deployments on multiple networks, you can specify the network you mean the script to interact with via the `--network <network name>` option.
 
-Finally, if you have happened to rename the PlayToken from OlympiaToken to something else, you can specify that name via the `--play-token-name <new case-sensitive name>` option.
+Finally, if you have happened to rename the PlayToken from pm-apollo-token to something else, you can specify that name via the `--play-token-name <new case-sensitive name>` option.
