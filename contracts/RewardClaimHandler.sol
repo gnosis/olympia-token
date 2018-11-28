@@ -9,7 +9,7 @@ contract RewardClaimHandler {
     mapping (address => uint) public rewardAmounts;
     uint public guaranteedClaimEndTime;
 
-    function RewardClaimHandler(Token _rewardToken) public {
+    constructor(Token _rewardToken) public {
         rewardToken = _rewardToken;
         operator = msg.sender;
     }

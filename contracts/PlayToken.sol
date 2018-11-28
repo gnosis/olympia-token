@@ -36,7 +36,7 @@ contract PlayToken is StandardToken {
      *  Public functions
      */
     /// @dev Constructor sets events contract address
-    function PlayToken()
+    constructor()
         public
     {
         creator = msg.sender;
